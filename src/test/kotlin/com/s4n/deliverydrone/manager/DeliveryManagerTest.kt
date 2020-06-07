@@ -8,7 +8,6 @@ import com.s4n.deliverydrone.util.INSTRUCTIONS_PATH
 import com.s4n.deliverydrone.util.REPORT_PATH
 import com.s4n.deliverydrone.util.writeFileTxt
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import java.io.File
 
 internal class DeliveryManagerTest {
@@ -19,6 +18,7 @@ internal class DeliveryManagerTest {
             val response = DeliveryManager.executeDeliveries()
             assert(File(REPORT_PATH).listFiles().size==20)
             assert(response is GenericResponse.Success)
+            validateContentReport()
         }
     }
 
@@ -36,6 +36,7 @@ internal class DeliveryManagerTest {
             val response = DeliveryManager.executeDeliveries()
             assert(File(REPORT_PATH).listFiles().size==19)
             assert(response is GenericResponse.Success)
+            validateContentReport()
         }
     }
 
@@ -46,7 +47,16 @@ internal class DeliveryManagerTest {
             val response = DeliveryManager.executeDeliveries()
             assert(File(REPORT_PATH).listFiles().size==20)
             assert(response is GenericResponse.Success)
+            val lines = File(REPORT_PATH,"report_13.txt").readLines()
+            assert("final status: One or more deliveries are out of limits for Dron 13, please create new instructions"==lines[3])
         }
+    }
+
+    private fun validateContentReport() {
+        val lines = File(REPORT_PATH, "report_1.txt").readLines()
+        assert("(-3,2) direction West" == lines[3])
+        assert("(-5,-1) direction South" == lines[6])
+        assert("(-5,-8) direction South" == lines[9])
     }
 
 
