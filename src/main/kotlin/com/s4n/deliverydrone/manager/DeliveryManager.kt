@@ -1,5 +1,6 @@
 package com.s4n.deliverydrone.manager
 
+import com.s4n.deliverydrone.drondriver.*
 import com.s4n.deliverydrone.model.DeliveryState
 import com.s4n.deliverydrone.model.Dron
 import com.s4n.deliverydrone.model.Position
@@ -7,6 +8,8 @@ import com.s4n.deliverydrone.reader.FileReaderImpl
 import com.s4n.deliverydrone.repository.RouteRepository
 import com.s4n.deliverydrone.service.PositionService
 import com.s4n.deliverydrone.util.*
+import goForwardPosition
+import turnPosition
 import java.io.File
 import java.util.logging.Logger
 import kotlin.math.sqrt
@@ -30,6 +33,14 @@ object DeliveryManager {
             val deliveriesToReport = mutableListOf<DeliveryState>()
             instructionsToExecute.forEach dronDelivery@{ instructionsPerDron ->
                 val dron = Dron(instructionsPerDron.id, INITIAL_DEFAULT_POSITION, DronType.DEFAULT)
+                // in case that one or more deliveries are out of range, It would be ideal recalculate new routes, generating instructions
+                if (!areDeliveriesInsideLimits(instructionsPerDron.instructions)) {
+                    val message = "One or more deliveries are out of limits for Dron ${dron.id}, " +
+                            "please create new instructions"
+                    log.warning(message)
+                    deliveriesToReport.add(DeliveryState(dron, message))
+                    return@dronDelivery
+                }
                 instructionsPerDron.instructions.forEach { command ->
                     if (!positionService.moveDron(command, dron)) {
                         val message = "Dron delivery incomplete"
@@ -37,13 +48,6 @@ object DeliveryManager {
                         deliveriesToReport.add(DeliveryState(dron, message))
                         return@dronDelivery
                     }
-                    if (!validateDistance(dron.position)) {
-                        val message = "Dron is out of limits, It must back to home id ${dron.id}"
-                        log.warning(message)
-                        deliveriesToReport.add(DeliveryState(dron, message))
-                        return@dronDelivery
-                    }
-
                 }
                 deliveriesToReport.add(DeliveryState(dron, "done"))
             }
@@ -77,6 +81,32 @@ object DeliveryManager {
             lines.add("final status: ${deliveryState.message}")
             writeFileTxt("report_${deliveryState.dron.id}.txt", lines, REPORT_PATH)
         }
+    }
+
+    /**
+     *
+     */
+    private fun areDeliveriesInsideLimits(commands: List<Command>): Boolean {
+        var finalPosition = INITIAL_DEFAULT_POSITION.copy()
+        commands.forEach { command ->
+            when (command) {
+                TurnLeftCommand -> {
+                    turnPosition(finalPosition, true)
+                }
+                TurnRightCommand -> {
+                    turnPosition(finalPosition, false)
+                }
+                GoForwardCommand -> {
+                    goForwardPosition(finalPosition)
+                }
+                DeliveryCommand -> {
+                    if (!validateDistance(finalPosition)) {
+                        return false
+                    }
+                }
+            }
+        }
+        return true
     }
 
     /**
