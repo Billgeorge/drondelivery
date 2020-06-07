@@ -1,6 +1,11 @@
 package com.s4n.deliverydrone.manager
 
-import com.s4n.deliverydrone.drondriver.*
+
+import com.s4n.deliverydrone.drondriver.Command
+import com.s4n.deliverydrone.drondriver.GoForwardCommand
+import com.s4n.deliverydrone.drondriver.DeliveryCommand
+import com.s4n.deliverydrone.drondriver.TurnLeftCommand
+import com.s4n.deliverydrone.drondriver.TurnRightCommand
 import com.s4n.deliverydrone.model.DeliveryState
 import com.s4n.deliverydrone.model.Dron
 import com.s4n.deliverydrone.model.Position
@@ -83,9 +88,6 @@ object DeliveryManager {
         }
     }
 
-    /**
-     *
-     */
     private fun areDeliveriesInsideLimits(commands: List<Command>): Boolean {
         var finalPosition = INITIAL_DEFAULT_POSITION.copy()
         commands.forEach { command ->
