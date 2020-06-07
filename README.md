@@ -1,5 +1,6 @@
 DRON-DELIVERY
-This project is the implementation of a dron delivery system with a input of instructions
+
+This project is the implementation of a Dron delivery system with files as source instructions.
 using files.
 
 INITIAL CONSIDERATIONS
