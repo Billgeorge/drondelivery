@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 import java.util.logging.Logger
 
 /**
- * Object responsible of manage position of Dron
+ * Object responsible of manage Dron position
  */
 object PositionService {
 
