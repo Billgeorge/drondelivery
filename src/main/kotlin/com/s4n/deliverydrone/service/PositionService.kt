@@ -6,8 +6,8 @@ import com.s4n.deliverydrone.model.Route
 import com.s4n.deliverydrone.repository.DronRepository
 import com.s4n.deliverydrone.repository.RouteRepository
 import com.s4n.deliverydrone.util.DronType
+import org.apache.log4j.Logger
 import java.time.LocalDateTime
-import java.util.logging.Logger
 
 /**
  * Object responsible of manage Dron position
@@ -37,7 +37,7 @@ object PositionService {
             routeRepository.create(route)
             true
         } ?: run {
-            log.warning("the type of dron does not exist")
+            log.warn("the type of dron does not exist")
             false
         }
     }

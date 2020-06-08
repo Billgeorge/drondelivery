@@ -4,8 +4,8 @@ import com.s4n.deliverydrone.drondriver.*
 import com.s4n.deliverydrone.util.Commands
 import com.s4n.deliverydrone.util.INSTRUCTIONS_PATH
 import com.s4n.deliverydrone.util.MAXIMUM_NUMBER_DELIVERIES
+import org.apache.log4j.Logger
 import java.io.File
-import java.util.logging.Logger
 
 
 /**
@@ -30,7 +30,7 @@ object FileReaderImpl : InstructionSourceReader {
                 val commandsPerDron = mutableListOf<Command>()
                 val lines = file.readLines()
                 if (lines.size > MAXIMUM_NUMBER_DELIVERIES) {
-                    log.warning("One Dron can only have $MAXIMUM_NUMBER_DELIVERIES deliveries, file omitted")
+                    log.warn("One Dron can only have $MAXIMUM_NUMBER_DELIVERIES deliveries, file omitted")
                     return@readingFiles
                 }
                 lines.forEach { instruction ->

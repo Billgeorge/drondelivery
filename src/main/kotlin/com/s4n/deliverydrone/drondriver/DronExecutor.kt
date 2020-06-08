@@ -2,8 +2,8 @@ package com.s4n.deliverydrone.drondriver
 
 import com.s4n.deliverydrone.model.Position
 import goForwardPosition
+import org.apache.log4j.Logger
 import turnPosition
-import java.util.logging.Logger
 
 /**
  * With this layer the behavior of the Dron can change. This means there can exist differents type of Drons
