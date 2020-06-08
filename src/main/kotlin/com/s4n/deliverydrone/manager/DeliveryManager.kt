@@ -9,14 +9,15 @@ import com.s4n.deliverydrone.drondriver.TurnRightCommand
 import com.s4n.deliverydrone.model.DeliveryState
 import com.s4n.deliverydrone.model.Dron
 import com.s4n.deliverydrone.model.Position
+import com.s4n.deliverydrone.reader.DronInstruction
 import com.s4n.deliverydrone.reader.FileReaderImpl
 import com.s4n.deliverydrone.repository.RouteRepository
 import com.s4n.deliverydrone.service.PositionService
 import com.s4n.deliverydrone.util.*
 import goForwardPosition
+import org.apache.log4j.Logger
 import turnPosition
 import java.io.File
-import java.util.logging.Logger
 import kotlin.math.sqrt
 
 /**
@@ -33,36 +34,64 @@ object DeliveryManager {
 
 
     fun executeDeliveries(): GenericResponse {
-        val instructionsToExecute = instructionReader.readInstructions()
-        return if (instructionsToExecute.size <= NUMBER_OF_DRONS) {
-            val deliveriesToReport = mutableListOf<DeliveryState>()
-            instructionsToExecute.forEach dronDelivery@{ instructionsPerDron ->
-                val dron = Dron(instructionsPerDron.id, INITIAL_DEFAULT_POSITION, DronType.DEFAULT)
-                // in case that one or more deliveries are out of range, It would be ideal recalculate new routes, generating instructions
-                if (!areDeliveriesInsideLimits(instructionsPerDron.instructions)) {
-                    val message = "One or more deliveries are out of limits for Dron ${dron.id}, " +
-                            "please create new instructions"
-                    log.warning(message)
-                    deliveriesToReport.add(DeliveryState(dron, message))
-                    return@dronDelivery
-                }
-                instructionsPerDron.instructions.forEach { command ->
-                    if (!positionService.moveDron(command, dron)) {
-                        val message = "Dron delivery incomplete"
-                        log.warning(message)
-                        deliveriesToReport.add(DeliveryState(dron, message))
-                        return@dronDelivery
-                    }
-                }
-                deliveriesToReport.add(DeliveryState(dron, "done"))
+        return try {
+            val instructionsToExecute = instructionReader.readInstructions()
+            if (instructionsToExecute.size <= NUMBER_OF_DRONS) {
+                val deliveriesToReport = mutableListOf<DeliveryState>()
+                processDeliveries(instructionsToExecute, deliveriesToReport)
+                createReports(deliveriesToReport)
+                GenericResponse.Success("Done")
+            } else {
+                val message = "You are asking more than 20 Drons"
+                log.warn(message)
+                GenericResponse.Error(message)
             }
-            createReports(deliveriesToReport)
-            GenericResponse.Success("Done")
-        } else {
-            val message = "You are asking more than 20 Drons"
-            log.warning(message)
-            GenericResponse.Error(message)
+        } catch (e: Exception) {
+            log.error(e)
+            GenericResponse.Error(e.message!!)
         }
+    }
+
+    private fun processDeliveries(
+        instructionsToExecute: List<DronInstruction>,
+        deliveriesToReport: MutableList<DeliveryState>
+    ) {
+        instructionsToExecute.forEach dronDelivery@{ instructionsPerDron ->
+            val dron = Dron(instructionsPerDron.id, INITIAL_DEFAULT_POSITION, DronType.DEFAULT)
+            // in case that one or more deliveries are out of range, It would be ideal recalculate new routes, generating instructions
+            val message = "One or more deliveries are out of limits for Dron ${dron.id}, " +
+                    "please create new instructions"
+            if (addErrorMessageToReport(dron, message, deliveriesToReport) {
+                    areDeliveriesInsideLimits(
+                        instructionsPerDron.instructions
+                    )
+                }) return@dronDelivery
+
+            instructionsPerDron.instructions.forEach { command ->
+
+                if (addErrorMessageToReport(
+                        dron,
+                        "Dron delivery incomplete",
+                        deliveriesToReport
+                    ) { positionService.moveDron(command, dron) }
+                ) return@dronDelivery
+            }
+            deliveriesToReport.add(DeliveryState(dron, "done"))
+        }
+    }
+
+    private fun addErrorMessageToReport(
+        dron: Dron,
+        message: String,
+        deliveriesToReport: MutableList<DeliveryState>,
+        booleanFunction: () -> Boolean
+    ): Boolean {
+        if (!booleanFunction()) {
+            log.warn(message)
+            deliveriesToReport.add(DeliveryState(dron, message))
+            return true
+        }
+        return false
     }
 
     private fun createReports(deliveries: List<DeliveryState>) {
